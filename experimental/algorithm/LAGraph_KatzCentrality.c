@@ -19,8 +19,11 @@
 #define LG_FREE_WORK                        \
 {                                           \
     /* free any workspace used here */      \
-    /* GrB_free (&b) ; */                     \
-    /*GrB_Matrix_free (&A) ; */                         \
+    GrB_free (&C_prev) ;                    \
+    GrB_free (&diff) ;                      \
+    GrB_free (&A) ;                         \
+    GrB_free (&A_type) ;                    \
+    GrB_free (&semiring) ;                  \
 }
 
 #define LG_FREE_ALL                         \
@@ -29,7 +32,6 @@
     LG_FREE_WORK ;                          \
     /* free all the output variable(s) */   \
     GrB_free (&C) ;                         \
-    /* take any other corrective action */  \
 }
 
 #include "LG_internal.h"
@@ -53,17 +55,19 @@ int LAGraph_KatzCentrality
     // clear user message
     LG_CLEAR_MSG ;
 
-    GrB_Vector C = NULL ;
+    // declarations before TRY macros
+    GrB_Vector C = NULL, C_prev = NULL, diff = NULL;
+    GrB_Matrix A = NULL ;
+    GrB_Type A_type;
+    GrB_Semiring semiring ;
+
+
     LG_ASSERT (central != NULL, GrB_NULL_POINTER) ; // check size of central vector as well?
     (*central) = NULL ;
 
-    // add assert for alpha value
     LG_TRY (LAGraph_CheckGraph (G, msg)) ;
 
-    GrB_Matrix A = NULL ;
     A = G->A ;
-
-    GrB_Type A_type;
     GRB_TRY(GxB_Matrix_type(&A_type, A));
     LG_ASSERT_MSG (A_type == GrB_FP64, GrB_DOMAIN_MISMATCH, "Adjacency matrix must be of type double") ;
 
@@ -86,13 +90,10 @@ int LAGraph_KatzCentrality
     }
 
     GrB_Index nvals ; // number of non-zero values in beta vector
-
-    GrB_Vector b;
-
     GRB_TRY (GrB_Vector_nvals (&nvals, *beta)) ;
     if (nvals == 1){
-        // check if needed
         // beta is a scalar
+        GrB_Scalar b_scalar ;
         // Try GrB_Scalar b = *beta;
 
         // get index of beta value (or assume it's in the first position)
@@ -102,14 +103,14 @@ int LAGraph_KatzCentrality
         GrB_Index beta_value_index = GxB_Vector_Iterator_getp(beta_it);
 
         // get beta value as scalar
-        GRB_TRY (GrB_Vector_extractElement_Scalar (b, *beta, beta_value_index)) ;
+        GRB_TRY (GrB_Vector_extractElement_Scalar (b_scalar, *beta, beta_value_index)) ;
+        GRB_TRY (GrB_Vector_set_Scalar(*beta, b_scalar, GxB_BITMAP_SWITCH)) ;
+
+        // free objects
+        GRB_TRY (GrB_Scalar_free (&b_scalar)) ;
+        GRB_TRY (GxB_Iterator_free (&beta_it)) ;
     }
-    else if (nvals == n)
-    {
-        // beta is a vector
-        GRB_TRY (GrB_Vector_dup (&b, *beta)) ; // copy beta to b
-    }
-    else
+    else if (nvals != n)
     {
         LG_ASSERT_MSG (false, GrB_INVALID_VALUE, "beta vector must be a scalar or have the same size as the number of nodes") ;
     }
@@ -118,7 +119,6 @@ int LAGraph_KatzCentrality
     bool iso_valued = false ;
     GRB_TRY (GxB_Matrix_iso(&iso_valued, A)) ;
 
-    GrB_Semiring semiring ;
     if (iso_valued){
         void *iso_val ;
         GRB_TRY(GxB_Matrix_pack_CSR(A, NULL, NULL, &iso_val, 0, 0, 8, iso_valued, NULL, NULL)) ; // A is of type double
@@ -132,21 +132,19 @@ int LAGraph_KatzCentrality
         semiring = GxB_PLUS_TIMES_FP64 ;
     }
 
-    GrB_Vector C_prev = NULL ;
     GRB_TRY (GrB_Vector_new (&C_prev, GrB_FP64, n)) ;
     for (uint64_t i = 0; i < max_iter; i++)
     {
         // C_prev = C
         GRB_TRY (GrB_Vector_dup (&C_prev, C)) ;
 
-        // C = alpha * semiring(A,C_prev) + b
+        // C = alpha * semiring(A,C_prev) + beta
         GRB_TRY (GrB_mxv (C, NULL, NULL, semiring, A, C_prev, NULL)) ;
         GRB_TRY (GrB_Vector_apply_BinaryOp1st_FP64 (C, NULL, NULL,  GrB_TIMES_FP64, alpha, C, NULL)) ;
-        GRB_TRY (GrB_Vector_eWiseAdd_BinaryOp (C, NULL, NULL, GrB_PLUS_FP64, C, b, NULL)) ;
+        GRB_TRY (GrB_Vector_eWiseAdd_BinaryOp (C, NULL, NULL, GrB_PLUS_FP64, C, *beta, NULL)) ;
 
 
         // check for convergence
-        GrB_Vector diff = NULL ;
         GRB_TRY (GrB_Vector_new (&diff, GrB_FP64, n)) ;
         GRB_TRY (GrB_eWiseAdd (diff, NULL, NULL, GrB_MINUS_FP64, C, C_prev, NULL)) ;
         GRB_TRY (GrB_Vector_apply (diff, NULL, NULL, GrB_ABS_FP64, diff, NULL)) ;
@@ -162,12 +160,11 @@ int LAGraph_KatzCentrality
                 GRB_TRY (GrB_Vector_reduce_FP64 (&euclidean_norm, NULL, GrB_PLUS_MONOID_FP64, C, NULL)) ;
                 GRB_TRY (GrB_Vector_apply_BinaryOp2nd_FP64 (C, NULL, NULL, GrB_DIV_FP64, C, euclidean_norm, NULL)) ;
             }
-            (*central) = C ;
-            LG_FREE_WORK ;
-            return (GrB_SUCCESS) ;
+            break;
         }
     }
 
-    LG_FREE_ALL ; 
-    LG_ASSERT_MSG (false, GxB_EXHAUSTED, "Katz centrality did not converge") ;
+    (*central) = C ;
+    LG_FREE_ALL ;
+    return (GrB_SUCCESS) ;
 }
