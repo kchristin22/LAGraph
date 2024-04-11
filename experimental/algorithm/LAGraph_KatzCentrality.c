@@ -1,7 +1,6 @@
-//------------------------------------------------------------------------------
-// LAGraph_KCoreDecompose: Helper method to LAGraph_KCore and LAGraph_AllKCore
-// that performs graph decomposition given a specified value k.
-//------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+// LAGraph_KatzCentrality: Computes the Katz centrality of all nodes in the graph.
+//--------------------------------------------------------------------------------
 
 // LAGraph, (c) 2019-2022 by The LAGraph Contributors, All Rights Reserved.
 // SPDX-License-Identifier: BSD-2-Clause
@@ -14,7 +13,7 @@
 
 // Contributed by Christina Koutsou, Aristotle University of Thessaloniki (AUTh)
 
-//------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
 
 #define LG_FREE_WORK                        \
 {                                           \
