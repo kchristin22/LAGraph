@@ -1216,7 +1216,27 @@ int LAGr_Modularity(
     GrB_Vector c,       // Cluster vector where c[i] = j means vertex i is in cluster j
     GrB_Matrix A,       // Adjacency matrix
     char *msg
-) ;
+);
+
+//------------------------------------------------------------------------------
+// Katz centrality of graph nodes
+//------------------------------------------------------------------------------
+
+LAGRAPHX_PUBLIC
+int LAGraph_KatzCentrality
+(
+    // outputs:
+    GrB_Vector *central,    // katz centrality
+    // inputs:
+    LAGraph_Graph G,        // input graph
+    double alpha,           // attenuation factor
+    GrB_Vector *beta,       // bias factor
+    uint64_t max_iter,      // maximum number of iterations
+    double tol,             // tolerance for convergence
+    GrB_Vector *nstart,     // starting vector of centrality for each node
+    bool normalize,         // if true, normalize the result
+    char *msg
+);
 
 #if defined ( __cplusplus )
 }
