@@ -165,6 +165,6 @@ int LAGraph_KatzCentrality
     }
 
     (*central) = C ;
-    LG_FREE_ALL ;
+    LG_FREE_WORK ;
     return (GrB_SUCCESS) ;
 }
