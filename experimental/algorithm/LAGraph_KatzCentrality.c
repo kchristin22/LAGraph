@@ -22,6 +22,7 @@
     GrB_free (&diff) ;                      \
     GrB_free (&A) ;                         \
     GrB_free (&A_type) ;                    \
+    GrB_free (&beta_type) ;                 \
     GrB_free (&semiring) ;                  \
 }
 
@@ -57,7 +58,7 @@ int LAGraph_KatzCentrality
     // declarations before TRY macros
     GrB_Vector C = NULL, C_prev = NULL, diff = NULL;
     GrB_Matrix A = NULL ;
-    GrB_Type A_type;
+    GrB_Type A_type, beta_type;
     GrB_Semiring semiring ;
 
 
@@ -69,6 +70,9 @@ int LAGraph_KatzCentrality
     A = G->A ;
     GRB_TRY(GxB_Matrix_type(&A_type, A));
     LG_ASSERT_MSG (A_type == GrB_FP64, GrB_DOMAIN_MISMATCH, "Adjacency matrix must be of type double") ;
+
+    GRB_TRY (GxB_Vector_type (&beta_type, *beta)) ;
+    LG_ASSERT_MSG (beta_type == GrB_FP64, GrB_DOMAIN_MISMATCH, "Beta vector must be of type double") ;
 
     GrB_Index n ;
     GRB_TRY (GrB_Matrix_nrows (&n, G->A)) ;
@@ -92,21 +96,18 @@ int LAGraph_KatzCentrality
     GRB_TRY (GrB_Vector_nvals (&nvals, *beta)) ;
     if (nvals == 1){
         // beta is a scalar
-        GrB_Scalar b_scalar ;
-        // Try GrB_Scalar b = *beta;
+        double beta_value ;
 
         // get index of beta value (or assume it's in the first position)
         GxB_Iterator beta_it ;
         GRB_TRY (GxB_Iterator_new (&beta_it)) ;
         GRB_TRY (GxB_Vector_Iterator_attach(beta_it, *beta, NULL));
         GrB_Index beta_value_index = GxB_Vector_Iterator_getp(beta_it);
-
-        // get beta value as scalar
-        GRB_TRY (GrB_Vector_extractElement_Scalar (b_scalar, *beta, beta_value_index)) ;
-        GRB_TRY (GrB_Vector_set_Scalar(*beta, b_scalar, GxB_BITMAP_SWITCH)) ;
+        // get beta value and assign it to the whole vector
+        GRB_TRY (GrB_Vector_extractElement_FP64 (&beta_value, *beta, beta_value_index)) ;
+        GRB_TRY (GrB_Vector_assign_FP64 (C, NULL, NULL, beta_value, GrB_ALL, n, NULL)) ;
 
         // free objects
-        GRB_TRY (GrB_Scalar_free (&b_scalar)) ;
         GRB_TRY (GxB_Iterator_free (&beta_it)) ;
     }
     else if (nvals != n)
@@ -153,7 +154,7 @@ int LAGraph_KatzCentrality
         {
             if (normalize)
             {
-                // normalize C
+                // normalize C (or call LAGraph_norm2)
                 double euclidean_norm ;
                 GRB_TRY (GrB_Vector_apply_BinaryOp2nd_INT8 (C, NULL, NULL, GxB_POW_FP64, C, 2, NULL)) ;
                 GRB_TRY (GrB_Vector_reduce_FP64 (&euclidean_norm, NULL, GrB_PLUS_MONOID_FP64, C, NULL)) ;
