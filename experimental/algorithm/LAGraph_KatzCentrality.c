@@ -20,7 +20,6 @@
     /* free any workspace used here */      \
     GrB_free (&C_prev) ;                    \
     GrB_free (&diff) ;                      \
-    GrB_free (&A) ;                         \
     GrB_free (&A_type) ;                    \
     GrB_free (&beta_type) ;                 \
     GrB_free (&semiring) ;                  \
@@ -67,7 +66,7 @@ int LAGraph_KatzCentrality
 
     LG_TRY (LAGraph_CheckGraph (G, msg)) ;
 
-    A = G->A ;
+    A = G->A ; // reference to the adjacency matrix of the graph, should not be freed
     GRB_TRY(GxB_Matrix_type(&A_type, A));
     LG_ASSERT_MSG (A_type == GrB_FP64, GrB_DOMAIN_MISMATCH, "Adjacency matrix must be of type double") ;
 
@@ -162,6 +161,7 @@ int LAGraph_KatzCentrality
                 GRB_TRY (GrB_Vector_reduce_FP64 (&euclidean_norm, NULL, GrB_PLUS_MONOID_FP64, C2, NULL)) ;
                 euclidean_norm = sqrt(euclidean_norm) ;
                 GRB_TRY (GrB_Vector_apply_BinaryOp2nd_FP64 (C, NULL, NULL, GrB_DIV_FP64, C, euclidean_norm, NULL)) ;
+                GRB_TRY (GrB_Vector_free (&C2)) ;
             }
             break;
         }
