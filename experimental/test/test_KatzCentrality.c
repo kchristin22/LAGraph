@@ -243,6 +243,7 @@ void test_KatzCentrality (void)
     //--------------------------------------------------------------------------
 
     OK (GrB_free (&Y)) ;
+    OK (GrB_free (&beta)) ;
     OK (LAGraph_Delete (&G, msg)) ;
 
     LAGraph_Finalize (msg) ;
