@@ -105,7 +105,7 @@ int LAGraph_KatzCentrality
         GrB_Index beta_value_index = GxB_Vector_Iterator_getp(beta_it);
         // get beta value and assign it to the whole vector
         GRB_TRY (GrB_Vector_extractElement_FP64 (&beta_value, *beta, beta_value_index)) ;
-        GRB_TRY (GrB_Vector_assign_FP64 (C, NULL, NULL, beta_value, GrB_ALL, n, NULL)) ;
+        GRB_TRY (GrB_Vector_assign_FP64 (*beta, NULL, NULL, beta_value, GrB_ALL, n, NULL)) ;
 
         // free objects
         GRB_TRY (GxB_Iterator_free (&beta_it)) ;
@@ -154,10 +154,13 @@ int LAGraph_KatzCentrality
         {
             if (normalize)
             {
-                // normalize C (or call LAGraph_norm2)
+                // normalize C (LAGraph_norm2 is for float vectors)
                 double euclidean_norm ;
-                GRB_TRY (GrB_Vector_apply_BinaryOp2nd_INT8 (C, NULL, NULL, GxB_POW_FP64, C, 2, NULL)) ;
-                GRB_TRY (GrB_Vector_reduce_FP64 (&euclidean_norm, NULL, GrB_PLUS_MONOID_FP64, C, NULL)) ;
+                GrB_Vector C2 = NULL ;
+                GRB_TRY (GrB_Vector_new (&C2, GrB_FP64, n)) ;
+                GRB_TRY (GrB_Vector_apply_BinaryOp2nd_INT8 (C2, NULL, NULL, GxB_POW_FP64, C, 2, NULL)) ;
+                GRB_TRY (GrB_Vector_reduce_FP64 (&euclidean_norm, NULL, GrB_PLUS_MONOID_FP64, C2, NULL)) ;
+                euclidean_norm = sqrt(euclidean_norm) ;
                 GRB_TRY (GrB_Vector_apply_BinaryOp2nd_FP64 (C, NULL, NULL, GrB_DIV_FP64, C, euclidean_norm, NULL)) ;
             }
             break;
