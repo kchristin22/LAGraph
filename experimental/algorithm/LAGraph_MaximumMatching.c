@@ -885,6 +885,8 @@ int LAGraph_MaximumMatching(
             // printf("pathC = invert (vr)\n");
             // GRB_TRY(GxB_print(vr, 2));
             LAGRAPH_TRY(invert(pathC, vr, true, msg));
+            check_matching(A, pathC, msg);
+
             // GRB_TRY(GxB_print(pathC, 2));
 
             /* debug
@@ -918,11 +920,11 @@ int LAGraph_MaximumMatching(
             /* debug
             GxB_Vector_fprint(mateC, "mateC", GxB_COMPLETE, stdout);
             */
-            GrB_Vector gunk = NULL ;
-            GrB_Vector_new (&gunk, GrB_UINT64, ncols) ;
-            GrB_assign (gunk, pathC, NULL, mateC, GrB_ALL, ncols, GrB_DESC_S) ;
-            GxB_print (gunk,2) ;
-            GrB_free (&gunk) ;
+            // GrB_Vector gunk = NULL ;
+            // GrB_Vector_new (&gunk, GrB_UINT64, ncols) ;
+            // GrB_assign (gunk, pathC, NULL, mateC, GrB_ALL, ncols, GrB_DESC_S) ;
+            // GxB_print (gunk,2) ;
+            // GrB_free (&gunk) ;
             check_matching (A, mateC, msg) ;
         }
 
