@@ -240,7 +240,7 @@ static inline GrB_Info
 invert(GrB_Vector out, // input/output.  Same as invert_nondescructive above.
        GrB_Vector in,  // input vector, empty on output (unless in == out)
        bool dups,      // flag that indicates if duplicates exist in the input
-                  // vector's values
+                       // vector's values
        char *msg)
 {
     // The input and output vectors can be the same vector
@@ -288,7 +288,7 @@ invert_2(GrB_Vector out, // input/output
          GrB_Vector in1, // input vector, empty on output (unless in1 == out)
          GrB_Vector in2, // input vector, empty on output (unless in2 == out)
          bool dups,      // flag that indicates if duplicates exist in the input
-                    // vector's values
+                         // vector's values
          char *msg)
 {
     // The input vectors cannot be aliased.  However in1==out or in2==out is
@@ -332,25 +332,23 @@ invert_2(GrB_Vector out, // input/output
     //  GRB_TRY(GxB_print (out,0)) ;
 }
 
-
-GrB_Info check_matching (GrB_Matrix A, GrB_Vector mateC, char *msg) ;
-GrB_Info check_matching (GrB_Matrix A, GrB_Vector mateC, char *msg)
+GrB_Info check_matching(GrB_Matrix A, GrB_Vector mateC, char *msg);
+GrB_Info check_matching(GrB_Matrix A, GrB_Vector mateC, char *msg)
 {
-    uint64_t nrows, ncols ;
+    uint64_t nrows, ncols;
 
     GrB_Matrix_ncols(&ncols, A);
     GrB_Matrix_nrows(&nrows, A);
     GrB_Index nmatched = 0;
-    GrB_Vector mateC_dup ;
-    GrB_Vector_dup (&mateC_dup, mateC) ;
+    GrB_Vector mateC_dup;
+    GrB_Vector_dup(&mateC_dup, mateC);
 
     // invert to check for dups
     GrB_Index Ibytes = 0, Jbytes = 0, Xbytes = 0;
     bool jumbled = 1;
-    GrB_Index *J = NULL, *X = NULL ;
-    GxB_Vector_unpack_CSC(mateC_dup, (GrB_Index **)&J, (void **)&X,
-                             &Jbytes, &Xbytes, NULL, &nmatched,
-                             &jumbled, NULL);
+    GrB_Index *J = NULL, *X = NULL;
+    GxB_Vector_unpack_CSC(mateC_dup, (GrB_Index **)&J, (void **)&X, &Jbytes,
+                          &Xbytes, NULL, &nmatched, &jumbled, NULL);
 
     // pack matched values in a matrix
     GrB_Matrix M = NULL;
@@ -369,21 +367,21 @@ GrB_Info check_matching (GrB_Matrix A, GrB_Vector mateC, char *msg)
 
     // mask with matrix A to check if all edges are present in A
     GrB_Matrix_assign(M, M, NULL, A, GrB_ALL, nrows, GrB_ALL, ncols,
-                         GrB_DESC_S);
+                      GrB_DESC_S);
     GrB_Index nvalsM = 0;
     GrB_Matrix_nvals(&nvalsM, M);
     // if values have been eliminated then edges do not exist in A
     if (nvalsM != nmatched)
     {
-        printf ("mateC invalid!\n") ;
-        fflush (stdout) ;
-        abort ( ) ;
+        printf("mateC invalid!\n");
+        fflush(stdout);
+        abort();
     }
-    printf ("mateC OK!\n") ;
-    fflush (stdout) ;
+    printf("mateC OK!\n");
+    fflush(stdout);
 
     GrB_Matrix_free(&M);
-    GrB_free (&mateC_dup) ;
+    GrB_free(&mateC_dup);
 }
 
 //------------------------------------------------------------------------------
@@ -609,7 +607,7 @@ int LAGraph_MaximumMatching(
             // mateR = invert (mateC), but do not clear the input
             LAGRAPH_TRY(invert_nondestructive(mateR, mateC, msg));
         }
-        check_matching (A, mateC, msg) ;
+        check_matching(A, mateC, msg);
     }
 
     /* debug
@@ -617,13 +615,13 @@ int LAGraph_MaximumMatching(
     */
 
     double ttt = LAGraph_WallClockTime();
-    int64_t counter = 0 ;
+    int64_t counter = 0;
     do
     {
         uint64_t nmatched = 0;
         GRB_TRY(GrB_Vector_nvals(&nmatched, mateC));
-        printf ("\niteration %ld, matched %ld time so far %g\n",
-            counter++, nmatched, LAGraph_WallClockTime()-ttt) ;
+        printf("\niteration %ld, matched %ld time so far %g\n", counter++,
+               nmatched, LAGraph_WallClockTime() - ttt);
 
         GRB_TRY(GrB_Vector_clear(parentsR));
         // for every col j not matched, assign f(j) = VERTEX(j,j)
@@ -651,7 +649,8 @@ int LAGraph_MaximumMatching(
             // BFS), keeping only unvisited rows in the frontierR
             //----------------------------------------------------------------------
 
-            printf (".") ; fflush (stdout) ;
+            printf(".");
+            fflush(stdout);
 
             double t = LAGraph_WallClockTime();
             if (do_pushpull)
@@ -800,6 +799,7 @@ int LAGraph_MaximumMatching(
                 // STEP 7b (ufrontierR not empty): Build tuple of (parentC,
                 // rootC)
                 //----------------------------------------------------------------------
+                GRB_TRY(GrB_Vector_clear(frontierC));
                 GRB_TRY(GrB_Vector_apply_IndexOp_UDT(frontierC, NULL, NULL,
                                                      buildfCTuplesOp,
                                                      rootfRIndexes, &y, NULL));
@@ -853,8 +853,9 @@ int LAGraph_MaximumMatching(
         while (npath)
         {
             GRB_TRY(GrB_Vector_nvals(&nmatched, mateC));
-            printf (" (%ld,%ld)", npath, nmatched) ; fflush (stdout) ;
-            GxB_print (pathC, 2) ;
+            printf(" (%ld,%ld)", npath, nmatched);
+            fflush(stdout);
+            GxB_print(pathC, 2);
             // vr = invert (pathC), leaving pathC empty
             // pathC doesn't have dup values as it stems from an invertion
             // printf("vr = invert (pathC)\n");
@@ -884,7 +885,7 @@ int LAGraph_MaximumMatching(
             // after parent assignment)
             // printf("pathC = invert (vr)\n");
             // GRB_TRY(GxB_print(vr, 2));
-            LAGRAPH_TRY(invert(pathC, vr, true, msg));
+            LAGRAPH_TRY(invert(pathC, vr, false, msg));
             check_matching(A, pathC, msg);
 
             // GRB_TRY(GxB_print(pathC, 2));
@@ -922,10 +923,9 @@ int LAGraph_MaximumMatching(
             */
             // GrB_Vector gunk = NULL ;
             // GrB_Vector_new (&gunk, GrB_UINT64, ncols) ;
-            // GrB_assign (gunk, pathC, NULL, mateC, GrB_ALL, ncols, GrB_DESC_S) ;
-            // GxB_print (gunk,2) ;
-            // GrB_free (&gunk) ;
-            check_matching (A, mateC, msg) ;
+            // GrB_assign (gunk, pathC, NULL, mateC, GrB_ALL, ncols, GrB_DESC_S)
+            // ; GxB_print (gunk,2) ; GrB_free (&gunk) ;
+            check_matching(A, mateC, msg);
         }
 
         // compute mateR
@@ -944,6 +944,7 @@ int LAGraph_MaximumMatching(
 
     // GrB_set (GrB_GLOBAL, false, GxB_BURBLE) ;
     // tot = LAGraph_WallClockTime() - tot;
-    // printf("total time %g, mxm time: %g (%g)\n", tot, mxm_time, mxm_time / tot);
+    // printf("total time %g, mxm time: %g (%g)\n", tot, mxm_time, mxm_time /
+    // tot);
     return (GrB_SUCCESS);
 }
