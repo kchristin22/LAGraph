@@ -878,8 +878,8 @@ int LAGraph_MaximumMatching(
             */
 
             // // update mateR:  mateR<vr> = vr
-            // GRB_TRY(GrB_Vector_assign(mateR, vr, NULL, vr, GrB_ALL, nrows,
-            //                           GrB_DESC_S));
+            GRB_TRY(GrB_Vector_assign(mateR, vr, NULL, vr, GrB_ALL, nrows,
+                                      GrB_DESC_S));
 
             // pathC = invert (vr), leaving vr empty (vr may have duplicates
             // after parent assignment)
@@ -929,7 +929,7 @@ int LAGraph_MaximumMatching(
         }
 
         // compute mateR
-        LAGRAPH_TRY(invert_nondestructive(mateR, mateC, msg));
+        // LAGRAPH_TRY(invert_nondestructive(mateR, mateC, msg));
 
         npath = npathCopy;
     } while (npath); // only in the first and last iteration should this
