@@ -799,10 +799,10 @@ int LAGraph_MaximumMatching(
                 // STEP 7b (ufrontierR not empty): Build tuple of (parentC,
                 // rootC)
                 //----------------------------------------------------------------------
-                // GRB_TRY(GrB_Vector_clear(frontierC));
+                GRB_TRY(GrB_Vector_clear(frontierC));
                 GRB_TRY(GrB_Vector_apply_IndexOp_UDT(frontierC, NULL, NULL,
                                                      buildfCTuplesOp,
-                                                     rootfRIndexes, &y, GrB_DESC_R));
+                                                     rootfRIndexes, &y, NULL));
 
                 /* debug
                 GrB_Index C[ncols];
