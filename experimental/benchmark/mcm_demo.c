@@ -80,18 +80,19 @@ int main(int argc, char **argv)
                             structural, NULL, ensure_positive, argc, argv));
 
     A = G->A;
-    // compute AT to be able to use push-pull optimization
-    if (G->is_symmetric_structure)
-        AT = A;
-    else
-    {
-        uint64_t nrows = 0, ncols = 0;
-        GrB_Matrix_ncols(&ncols, A);
-        GrB_Matrix_nrows(&nrows, A);
-        GRB_TRY(GrB_Matrix_new(&AT, GrB_BOOL, ncols, nrows));
-        GRB_TRY(GrB_transpose(AT, NULL, NULL, A, NULL));
-        // AT = G->AT;
-    }
+    // // compute AT to be able to use push-pull optimization
+    // if (G->is_symmetric_structure)
+    //     AT = A;
+    // else
+    // {
+    //     uint64_t nrows = 0, ncols = 0;
+    //     GrB_Matrix_ncols(&ncols, A);
+    //     GrB_Matrix_nrows(&nrows, A);
+    //     GRB_TRY(GrB_Matrix_new(&AT, GrB_BOOL, ncols, nrows));
+    //     GRB_TRY(GrB_transpose(AT, NULL, NULL, A, NULL));
+    //     // AT = G->AT;
+    // }
+    AT = A;
 
     //--------------------------------------------------------------------------
     // determine the number of threads to run the algorithm with
