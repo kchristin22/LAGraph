@@ -561,7 +561,7 @@ int LAGraph_MaximumMatching(
     GRB_TRY(GxB_BinaryOp_new(&Select2ndOp, (void *)select2nd, Vertex, GrB_BOOL,
                              Vertex, "select2nd", SELECT_2ND_DEFN));
 
-    GRB_TRY(GrB_Semiring_new(&MinParent_2nd_Semiring, MinParent_Monoid_2,
+    GRB_TRY(GrB_Semiring_new(&MinParent_2nd_Semiring, MinParent_Monoid_1,
                              Select2ndOp));
 
     GRB_TRY(GxB_BinaryOp_new(&Select1stOp, (void *)select1st, Vertex, Vertex,
@@ -692,13 +692,13 @@ int LAGraph_MaximumMatching(
                     // the frontierC vector is sparse or hypersparse
                     // push (vector's values are pushed to A)
                     // GRB_TRY(GrB_Vector_clear(frontierR));
-                    GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
+                    GRB_TRY(GrB_vxm(frontierR, NULL, NULL,
                                     MinParent_1st_Semiring, frontierC, AT,
-                                    GrB_DESC_RSC));
+                                    GrB_DESC_R));
                     // printf("vxm\n");
-                    // GRB_TRY(GrB_Vector_assign(frontierR, parentsR, NULL,
-                    //   frontierR, GrB_ALL, nrows,
-                    //   GrB_DESC_RSC));
+                    GRB_TRY(GrB_Vector_assign(frontierR, parentsR, NULL,
+                                              frontierR, GrB_ALL, nrows,
+                                              GrB_DESC_RSC));
                 }
             }
             // else
