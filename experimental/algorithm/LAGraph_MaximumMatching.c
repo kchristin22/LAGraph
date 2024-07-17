@@ -551,11 +551,12 @@ int LAGraph_MaximumMatching(
                              Vertex, "minparent_1", MIN_PARENT_1_DEFN));
     GRB_TRY(GxB_BinaryOp_new(&MinParent_2, (void *)minparent_2, Vertex, Vertex,
                              Vertex, "minparent_2", MIN_PARENT_2_DEFN));
-    vertex infinityParent = {GrB_INDEX_MAX + 1, 0};
-    GRB_TRY(
-        GrB_Monoid_new_UDT(&MinParent_Monoid_1, MinParent_1, &infinityParent));
-    GRB_TRY(
-        GrB_Monoid_new_UDT(&MinParent_Monoid_2, MinParent_2, &infinityParent));
+    vertex infinityParent_1 = {GrB_INDEX_MAX + 1, 0};
+    vertex infinityParent_2 = {GrB_INDEX_MAX + 1, 0};
+    GRB_TRY(GrB_Monoid_new_UDT(&MinParent_Monoid_1, MinParent_1,
+                               &infinityParent_1));
+    GRB_TRY(GrB_Monoid_new_UDT(&MinParent_Monoid_2, MinParent_2,
+                               &infinityParent_2));
 
     GRB_TRY(GxB_BinaryOp_new(&Select2ndOp, (void *)select2nd, Vertex, GrB_BOOL,
                              Vertex, "select2nd", SELECT_2ND_DEFN));
