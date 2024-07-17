@@ -85,8 +85,12 @@ int main(int argc, char **argv)
         AT = A;
     else
     {
-        LAGRAPH_TRY(LAGraph_Cached_AT(G, msg));
-        AT = G->AT;
+        uint64_t nrows = 0, ncols = 0;
+        GrB_Matrix_ncols(&ncols, A);
+        GrB_Matrix_nrows(&nrows, A);
+        GRB_TRY(GrB_Matrix_new(&AT, GrB_BOOL, ncols, nrows));
+        GRB_TRY(GrB_transpose(AT, NULL, NULL, A, NULL));
+        // AT = G->AT;
     }
 
     //--------------------------------------------------------------------------
