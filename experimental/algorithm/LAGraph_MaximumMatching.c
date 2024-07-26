@@ -57,24 +57,13 @@ void *initFrontier(vertex *z, void *x, uint64_t i, uint64_t j, const void *y)
     "z->rootC = i; "                                                           \
     "} "
 
-void *minparent_1(vertex *z, vertex *x, vertex *y)
+void *minparent(vertex *z, vertex *x, vertex *y)
 {
     *z = x->parentC < y->parentC ? *x : *y;
 }
 
-#define MIN_PARENT_1_DEFN                                                      \
-    "void *minparent_1(vertex *z, vertex *x, vertex *y) "                      \
-    "{ "                                                                       \
-    "*z = x->parentC < y->parentC ? *x : *y; "                                 \
-    "} "
-
-void *minparent_2(vertex *z, vertex *x, vertex *y)
-{
-    *z = x->parentC < y->parentC ? *x : *y;
-}
-
-#define MIN_PARENT_2_DEFN                                                      \
-    "void *minparent_2(vertex *z, vertex *x, vertex *y) "                      \
+#define MIN_PARENT_DEFN                                                      \
+    "void *minparent(vertex *z, vertex *x, vertex *y) "                      \
     "{ "                                                                       \
     "*z = x->parentC < y->parentC ? *x : *y; "                                 \
     "} "
@@ -409,10 +398,8 @@ GrB_Info check_matching(GrB_Matrix A, GrB_Vector mateC, char *msg)
         GrB_free(&frontierR);                                                  \
         GrB_free(&initFrontierOp);                                             \
         GrB_free(&I);                                                          \
-        GrB_free(&MinParent_1);                                                \
-        GrB_free(&MinParent_Monoid_1);                                         \
-        GrB_free(&MinParent_2);                                                \
-        GrB_free(&MinParent_Monoid_2);                                         \
+        GrB_free(&MinParent);                                                  \
+        GrB_free(&MinParent_Monoid);                                           \
         GrB_free(&Select2ndOp);                                                \
         GrB_free(&Select1stOp);                                                \
         GrB_free(&MinParent_2nd_Semiring);                                     \
@@ -476,10 +463,8 @@ int LAGraph_MaximumMatching(
     GrB_Vector frontierR = NULL;
     GrB_IndexUnaryOp initFrontierOp = NULL;
     GrB_Vector I = NULL; // dense vector of 1's
-    GrB_BinaryOp MinParent_1 = NULL;
-    GrB_BinaryOp MinParent_2 = NULL;
-    GrB_Monoid MinParent_Monoid_1 = NULL;
-    GrB_Monoid MinParent_Monoid_2 = NULL;
+    GrB_BinaryOp MinParent = NULL;
+    GrB_Monoid MinParent_Monoid = NULL;
     GrB_BinaryOp Select2ndOp = NULL;
     GrB_BinaryOp Select1stOp = NULL;
     GrB_Semiring MinParent_2nd_Semiring = NULL;
@@ -547,27 +532,21 @@ int LAGraph_MaximumMatching(
     GRB_TRY(GrB_Vector_new(&I, GrB_BOOL, ncols));
     GRB_TRY(GrB_Vector_assign_BOOL(I, NULL, NULL, 1, GrB_ALL, ncols, NULL));
 
-    GRB_TRY(GxB_BinaryOp_new(&MinParent_1, (void *)minparent_1, Vertex, Vertex,
-                             Vertex, "minparent_1", MIN_PARENT_1_DEFN));
-    GRB_TRY(GxB_BinaryOp_new(&MinParent_2, (void *)minparent_2, Vertex, Vertex,
-                             Vertex, "minparent_2", MIN_PARENT_2_DEFN));
-    vertex infinityParent_1 = {GrB_INDEX_MAX + 1, 0};
-    vertex infinityParent_2 = {GrB_INDEX_MAX + 1, 0};
-    GRB_TRY(GrB_Monoid_new_UDT(&MinParent_Monoid_1, MinParent_1,
-                               &infinityParent_1));
-    GRB_TRY(GrB_Monoid_new_UDT(&MinParent_Monoid_2, MinParent_2,
-                               &infinityParent_2));
-
+    GRB_TRY(GxB_BinaryOp_new(&MinParent, (void *)minparent, Vertex, Vertex,
+                             Vertex, "minparent", MIN_PARENT_DEFN));
+    vertex infinityParent = {GrB_INDEX_MAX + 1, 0};
+    GRB_TRY(GrB_Monoid_new_UDT(&MinParent_Monoid, MinParent,
+                               &infinityParent));
     GRB_TRY(GxB_BinaryOp_new(&Select2ndOp, (void *)select2nd, Vertex, GrB_BOOL,
                              Vertex, "select2nd", SELECT_2ND_DEFN));
 
-    GRB_TRY(GrB_Semiring_new(&MinParent_2nd_Semiring, MinParent_Monoid_1,
+    GRB_TRY(GrB_Semiring_new(&MinParent_2nd_Semiring, MinParent_Monoid,
                              Select2ndOp));
 
     GRB_TRY(GxB_BinaryOp_new(&Select1stOp, (void *)select1st, Vertex, Vertex,
                              GrB_BOOL, "select1st", SELECT_1ST_DEFN));
 
-    GRB_TRY(GrB_Semiring_new(&MinParent_1st_Semiring, MinParent_Monoid_1,
+    GRB_TRY(GrB_Semiring_new(&MinParent_1st_Semiring, MinParent_Monoid,
                              Select1stOp));
 
     GRB_TRY(GxB_UnaryOp_new(&getParentsOp, (void *)keepParents, GrB_UINT64,
@@ -699,25 +678,30 @@ int LAGraph_MaximumMatching(
                     GRB_TRY(GrB_Vector_assign(frontierR, parentsR, NULL,
                                               frontierR, GrB_ALL, nrows,
                                               GrB_DESC_RSC));
+
+                    // version that produces a segmentation fault:
+                    GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
+                                    MinParent_1st_Semiring, frontierC, AT,
+                                    GrB_DESC_RSC));
                 }
             }
-            // else
-            // {
-            //     if (A != NULL)
-            //     {
-            //         // Only the pull method can be used if AT is not given
-            //         GRB_TRY(GrB_mxv(frontierR, parentsR, NULL,
-            //                         MinParent_2nd_Semiring, A, frontierC,
-            //                         GrB_DESC_RSC));
-            //     }
-            //     else
-            //     {
-            //         // Only the push method can be used if A is not given
-            //         GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
-            //                         MinParent_1st_Semiring, frontierC, AT,
-            //                         GrB_DESC_RSC));
-            //     }
-            // }
+            else
+            {
+                if (A != NULL)
+                {
+                    // Only the pull method can be used if AT is not given
+                    GRB_TRY(GrB_mxv(frontierR, parentsR, NULL,
+                                    MinParent_2nd_Semiring, A, frontierC,
+                                    GrB_DESC_RSC));
+                }
+                else
+                {
+                    // Only the push method can be used if A is not given
+                    GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
+                                    MinParent_1st_Semiring, frontierC, AT,
+                                    GrB_DESC_RSC));
+                }
+            }
             t = LAGraph_WallClockTime() - t;
             mxm_time += t;
 
