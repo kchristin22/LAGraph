@@ -62,8 +62,8 @@ void *minparent(vertex *z, vertex *x, vertex *y)
     *z = x->parentC < y->parentC ? *x : *y;
 }
 
-#define MIN_PARENT_DEFN                                                      \
-    "void *minparent(vertex *z, vertex *x, vertex *y) "                      \
+#define MIN_PARENT_DEFN                                                        \
+    "void *minparent(vertex *z, vertex *x, vertex *y) "                        \
     "{ "                                                                       \
     "*z = x->parentC < y->parentC ? *x : *y; "                                 \
     "} "
@@ -152,6 +152,11 @@ void *setParentsMates(vertex *z, vertex *x, vertex *y)
     "z->parentC = y->parentC; "                                                \
     "z->rootC = x->rootC; "                                                    \
     "} "
+
+void *equal(bool *z, vertex *x, vertex *y)
+{
+    *z = x->parentC == y->parentC && x->rootC == y->rootC ? true : false;
+}
 
 //------------------------------------------------------------------------------
 // invert
@@ -535,8 +540,7 @@ int LAGraph_MaximumMatching(
     GRB_TRY(GxB_BinaryOp_new(&MinParent, (void *)minparent, Vertex, Vertex,
                              Vertex, "minparent", MIN_PARENT_DEFN));
     vertex infinityParent = {GrB_INDEX_MAX + 1, 0};
-    GRB_TRY(GrB_Monoid_new_UDT(&MinParent_Monoid, MinParent,
-                               &infinityParent));
+    GRB_TRY(GrB_Monoid_new_UDT(&MinParent_Monoid, MinParent, &infinityParent));
     GRB_TRY(GxB_BinaryOp_new(&Select2ndOp, (void *)select2nd, Vertex, GrB_BOOL,
                              Vertex, "select2nd", SELECT_2ND_DEFN));
 
@@ -670,7 +674,6 @@ int LAGraph_MaximumMatching(
                 {
                     // the frontierC vector is sparse or hypersparse
                     // push (vector's values are pushed to A)
-                    // GRB_TRY(GrB_Vector_clear(frontierR));
                     GRB_TRY(GrB_vxm(frontierR, NULL, NULL,
                                     MinParent_1st_Semiring, frontierC, AT,
                                     GrB_DESC_R));
@@ -680,9 +683,33 @@ int LAGraph_MaximumMatching(
                                               GrB_DESC_RSC));
 
                     // version that produces a segmentation fault:
-                    GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
-                                    MinParent_1st_Semiring, frontierC, AT,
+                    // GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
+                    //                 MinParent_1st_Semiring, frontierC, AT,
+                    //                 GrB_DESC_RSC));
+
+                    GrB_Vector frontierR_dup = NULL;
+                    GRB_TRY(GrB_Vector_new(&frontierR_dup, Vertex, nrows));
+                    GrB_BinaryOp Vector_equality = NULL;
+                    GRB_TRY(GrB_BinaryOp_new(&Vector_equality, (void *)equal,
+                                             GrB_BOOL, Vertex, Vertex));
+
+                    GRB_TRY(GrB_mxv(frontierR_dup, parentsR, NULL,
+                                    MinParent_2nd_Semiring, A, frontierC,
                                     GrB_DESC_RSC));
+
+                    bool equal = 0;
+                    LAGRAPH_TRY(LAGraph_Vector_IsEqualOp(&equal, frontierR,
+                                                         frontierR_dup,
+                                                         Vector_equality, msg));
+                    if (!equal)
+                    {
+                        printf("frontierR from vxm is different than frontierR "
+                               "from mxv\n");
+                        fflush(stdout);
+                        abort();
+                    }
+                    GRB_TRY(GrB_Vector_free(&frontierR_dup));
+                    GRB_TRY(GrB_BinaryOp_free(&Vector_equality));
                 }
             }
             else
