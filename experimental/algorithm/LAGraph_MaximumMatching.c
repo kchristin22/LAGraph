@@ -714,20 +714,23 @@ int LAGraph_MaximumMatching(
             }
             else
             {
-                if (A != NULL)
-                {
-                    // Only the pull method can be used if AT is not given
-                    GRB_TRY(GrB_mxv(frontierR, parentsR, NULL,
-                                    MinParent_2nd_Semiring, A, frontierC,
-                                    GrB_DESC_RSC));
-                }
-                else
-                {
-                    // Only the push method can be used if A is not given
-                    GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
-                                    MinParent_1st_Semiring, frontierC, AT,
-                                    GrB_DESC_RSC));
-                }
+                // if (A != NULL)
+                // {
+                //     // Only the pull method can be used if AT is not given
+                //     GRB_TRY(GrB_mxv(frontierR, parentsR, NULL,
+                //                     MinParent_2nd_Semiring, A, frontierC,
+                //                     GrB_DESC_RSC));
+                // }
+                // else
+                // {
+                //     // Only the push method can be used if A is not given
+                //     GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
+                //                     MinParent_1st_Semiring, frontierC, AT,
+                //                     GrB_DESC_RSC));
+                // }
+                printf("Not in push-pull case\n");
+                fflush(stdout);
+                abort();
             }
             t = LAGraph_WallClockTime() - t;
             mxm_time += t;
