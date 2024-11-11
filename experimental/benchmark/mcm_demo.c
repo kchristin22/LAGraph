@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // LAGraph/experimental/benchmark/matching_demo.c: benchmarks for
-// LAGraph_MaximumMatching
+// LAGr_MaximumMatching
 //------------------------------------------------------------------------------
 
 // LAGraph, (c) 2019-2022 by The LAGraph Contributors, All Rights Reserved.
@@ -197,7 +197,7 @@ int main(int argc, char **argv)
 
     double t = LAGraph_WallClockTime();
     LAGRAPH_TRY(
-        LAGraph_MaximumMatching(&mateC, NULL, A, AT, mateC_init, true, msg));
+        LAGr_MaximumMatching(&mateC, NULL, A, AT, mateC_init, true, msg));
     t = LAGraph_WallClockTime() - t;
     LAGRAPH_TRY(check_matching(A, mateC, msg));
     uint64_t sprank = 0;
@@ -235,7 +235,7 @@ int main(int argc, char **argv)
         for (int trial = 0; trial < ntrials; trial++)
         {
             t = LAGraph_WallClockTime();
-            LAGRAPH_TRY(LAGraph_MaximumMatching(&mateC, NULL, A, AT, mateC_init,
+            LAGRAPH_TRY(LAGr_MaximumMatching(&mateC, NULL, A, AT, mateC_init,
                                                 true, msg));
             t = LAGraph_WallClockTime() - t;
             GRB_TRY(GrB_free(&mateC));

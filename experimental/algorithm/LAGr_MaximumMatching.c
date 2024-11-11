@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// LAGraph_MaximumMatching: maximum matching between nodes of disjoint sets
+// LAGr_MaximumMatching: maximum matching between nodes of disjoint sets
 //                          in bipartite graphs
 //------------------------------------------------------------------------------
 
@@ -29,6 +29,9 @@
 // More detailed explanation of the algorithm and its implementation can be
 // found in the LAGraph "papers" folder, in file
 // "MaximumMatching_Report.pdf".
+
+// This is an Advanced method, G->A is required as input instead of G due to
+// lack of a Bipartite graph kind in GraphBLAS.
 
 //------------------------------------------------------------------------------
 
@@ -425,7 +428,7 @@ invert_2(GrB_Vector out,  // input/output
 }
 
 //------------------------------------------------------------------------------
-// LAGraph_MaximumMatching
+// LAGr_MaximumMatching
 //------------------------------------------------------------------------------
 
 #undef LG_FREE_WORK
@@ -469,7 +472,7 @@ invert_2(GrB_Vector out,  // input/output
         GrB_free(&mateC);                                                      \
     }
 
-int LAGraph_MaximumMatching(
+int LAGr_MaximumMatching(
     // outputs:
     GrB_Vector
         *mateC_handle, // mateC(j) = i : Column j of the C subset is matched
@@ -822,7 +825,6 @@ int LAGraph_MaximumMatching(
                     // get roots of row nodes in the current R frontier
                     GRB_TRY(GrB_Vector_apply(rootsfR, NULL, NULL, getRootsOp,
                                              frontierR, NULL));
-
 
                     // keep mates and roots of the R frontier (ordered indices)
                     LAGRAPH_TRY(

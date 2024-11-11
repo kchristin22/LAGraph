@@ -1232,7 +1232,7 @@ int LAGraph_argminmax
 );
 
 LAGRAPHX_PUBLIC
-int LAGraph_MaximumMatching(
+int LAGr_MaximumMatching(
     // outputs
     GrB_Vector
         *mateC_handle, // mateC(j) = i : Column j of the C subset is matched to

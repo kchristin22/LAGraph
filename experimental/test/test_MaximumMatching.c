@@ -83,7 +83,7 @@ void test_MCM(void)
                 OK(GrB_transpose(AT, NULL, NULL, A, NULL));
             }
 
-            OK(LAGraph_MaximumMatching(&mateC, NULL, A, AT, mateC_init, true,
+            OK(LAGr_MaximumMatching(&mateC, NULL, A, AT, mateC_init, true,
                                        msg));
             printf("\nmsg: %s\n", msg);
 
