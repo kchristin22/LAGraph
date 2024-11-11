@@ -14,11 +14,23 @@
 
 // Contributed by Christina Koutsou, Aristotle University of Thessaloniki
 
-// add paper
-
 //------------------------------------------------------------------------------
 
-// add explanation of paper
+// This implmentation is based on the algorithm described in the following
+// paper: "Distributed-Memory Algorithms for Maximum Cardinality Matching in
+// Bipartite Graphs" by A. Azad and A. Buluç.
+//
+// In brief, this algorithm explores alternate paths by reversing an already
+// traversed path to see if one of the already matched columns encountered in
+// the path has at least one free children to be matched with instead. If so, it
+// concedes its previous match to another previously matched parent or to the
+// unmatched root of the path.
+
+// More detailed explanation of the algorithm and its implementation can be
+// found in the LAGraph "papers" folder, in file
+// "MaximumMatching_Report.pdf".
+
+//------------------------------------------------------------------------------
 
 #include "LAGraphX.h"
 #include "LG_internal.h"
@@ -49,7 +61,7 @@ void initFrontier(vertex *z, void *x, uint64_t i, uint64_t j, const void *y)
 }
 
 #define INIT_FRONTIER_DEFN                                                     \
-    "void initFrontier(vertex *z, void *x, uint64_t i, uint64_t j, const "    \
+    "void initFrontier(vertex *z, void *x, uint64_t i, uint64_t j, const "     \
     "void "                                                                    \
     "*y) "                                                                     \
     "{ "                                                                       \
@@ -63,7 +75,7 @@ void minparent(vertex *z, vertex *x, vertex *y)
 }
 
 #define MIN_PARENT_DEFN                                                        \
-    "void minparent(vertex *z, vertex *x, vertex *y) "                        \
+    "void minparent(vertex *z, vertex *x, vertex *y) "                         \
     "{ "                                                                       \
     "*z = x->parentC < y->parentC ? *x : *y; "                                 \
     "} "
@@ -77,7 +89,7 @@ void select2nd(vertex *z, bool *x, vertex *y)
 }
 
 #define SELECT_2ND_DEFN                                                        \
-    "void select2nd(vertex *z, bool *x, vertex *y) "                          \
+    "void select2nd(vertex *z, bool *x, vertex *y) "                           \
     "{ "                                                                       \
     "z->parentC = y->parentC; "                                                \
     "z->rootC = y->rootC;"                                                     \
@@ -90,7 +102,7 @@ void select1st(vertex *z, vertex *x, bool *y)
 }
 
 #define SELECT_1ST_DEFN                                                        \
-    "void select1st(vertex *z, vertex *x, bool *y) "                          \
+    "void select1st(vertex *z, vertex *x, bool *y) "                           \
     "{ "                                                                       \
     "z->parentC = x->parentC; "                                                \
     "z->rootC = x->rootC;"                                                     \
@@ -99,28 +111,22 @@ void select1st(vertex *z, vertex *x, bool *y)
 void keepParents(uint64_t *z, vertex *x) { *z = x->parentC; }
 
 #define KEEP_PARENTS_DEFN                                                      \
-    "void keepParents(uint64_t *z, vertex *x) "                               \
-    "{ "                                                                       \
-    "*z = x->parentC; "                                                        \
-    "} "
+    "void keepParents(uint64_t *z, vertex *x) { *z = x->parentC; } "
 
 void keepRoots(uint64_t *z, vertex *x) { *z = x->rootC; }
 
 #define KEEP_ROOTS_DEFN                                                        \
-    "void keepRoots(uint64_t *z, vertex *x) "                                 \
-    "{ "                                                                       \
-    "*z = x->rootC; "                                                          \
-    "} "
+    "void keepRoots(uint64_t *z, vertex *x) { *z = x->rootC; } "
 
 void buildfCTuples(vertex *z, uint64_t *x, uint64_t i, uint64_t j,
-                    const void *y)
+                   const void *y)
 {
     z->parentC = i;
     z->rootC = *x;
 }
 
 #define BUILT_FC_TUPLES_DEFN                                                   \
-    "void buildfCTuples(vertex *z, uint64_t *x, uint64_t i, uint64_t j, "     \
+    "void buildfCTuples(vertex *z, uint64_t *x, uint64_t i, uint64_t j, "      \
     "const void *y) "                                                          \
     "{ "                                                                       \
     "z->parentC = i; "                                                         \
@@ -134,7 +140,7 @@ void vertexTypecast(vertex *z, uint64_t *x)
 }
 
 #define VERTEX_TYPECAST_DEFN                                                   \
-    "void vertexTypecast(vertex *z, uint64_t *x) "                            \
+    "void vertexTypecast(vertex *z, uint64_t *x) "                             \
     "{ "                                                                       \
     "z->parentC = *x; "                                                        \
     "z->rootC = *x; "                                                          \
@@ -144,10 +150,10 @@ void setParentsMates(vertex *z, vertex *x, vertex *y)
 {
     z->parentC = y->parentC;
     z->rootC = x->rootC;
-};
+}
 
 #define SET_PARENTS_MATES_DEFN                                                 \
-    "void setParentsMates(vertex *z, vertex *x, vertex *y) "                  \
+    "void setParentsMates(vertex *z, vertex *x, vertex *y) "                   \
     "{ "                                                                       \
     "z->parentC = y->parentC; "                                                \
     "z->rootC = x->rootC; "                                                    \
@@ -708,28 +714,12 @@ int LAGraph_MaximumMatching(
         }
     }
 
-    /* debug
-    GxB_Vector_fprint(mateR, "mateR", GxB_COMPLETE, stdout);
-    */
-
     do
     {
         GRB_TRY(GrB_Vector_clear(parentsR));
         // for every col j not matched, assign f(j) = VERTEX(j,j)
         GRB_TRY(GrB_Vector_apply_IndexOp_UDT(
             frontierC, mateC, NULL, initFrontierOp, I, &y, GrB_DESC_RSC));
-
-        /* debug
-        GrB_Index C[ncols];
-        vertex *V = malloc(ncols * sizeof(vertex));
-        GrB_Vector_extractTuples_UDT(C, V, &ncols, frontierC);
-        for (int k = 0; k < ncols; k++)
-        {
-            printf("\nfc (%d) = (%ld, %ld)", (int)C[k], V[k].parentC,
-        V[k].rootC);
-        }
-        GxB_Vector_fprint(mateC, "mateC", GxB_COMPLETE, stdout);
-        */
 
         uint64_t nfC = 0;
 
@@ -799,21 +789,6 @@ int LAGraph_MaximumMatching(
             GRB_TRY(GrB_Vector_assign(currentMatesR, frontierR, NULL, mateR,
                                       GrB_ALL, nrows, GrB_DESC_RS));
 
-            /* debug
-            uint64_t nvals = 0;
-            GxB_Vector_fprint(currentMatesR, "currentMatesR", GxB_COMPLETE,
-            stdout); GrB_Index *R = (GrB_Index *)malloc(nrows *
-            sizeof(GrB_Index)); vertex *VR = (vertex *)malloc(nrows *
-            sizeof(vertex)); GrB_Vector_nvals(&nvals, frontierR);
-            GrB_Vector_extractTuples_UDT(R, VR, &nrows, frontierR);
-            for (int k = 0; k < nrows; k++)
-            {
-                printf("\nfr (%d) = (%ld, %ld)", (int)R[k], VR[k].parentC,
-            VR[k].rootC);
-            }
-            GxB_Vector_fprint(parentsR, "pr", GxB_COMPLETE, stdout);
-            */
-
             uint64_t nUfR = 0, nfR = 0;
             GRB_TRY(GrB_Vector_nvals(&nUfR, ufrontierR));
             GRB_TRY(GrB_Vector_nvals(&nfR, frontierR));
@@ -848,10 +823,6 @@ int LAGraph_MaximumMatching(
                     GRB_TRY(GrB_Vector_apply(rootsfR, NULL, NULL, getRootsOp,
                                              frontierR, NULL));
 
-                    /* debug
-                    GxB_Vector_fprint(rootsfR, "rootsfR", GxB_COMPLETE,
-                    stdout);
-                    */
 
                     // keep mates and roots of the R frontier (ordered indices)
                     LAGRAPH_TRY(
@@ -888,18 +859,6 @@ int LAGraph_MaximumMatching(
                 GRB_TRY(GrB_Vector_apply_IndexOp_UDT(frontierC, NULL, NULL,
                                                      buildfCTuplesOp,
                                                      rootfRIndexes, &y, NULL));
-#endif
-
-                /* debug
-                GrB_Index C[ncols];
-                vertex *V = malloc(ncols * sizeof(vertex));
-                GrB_Vector_extractTuples_UDT(C, V, &ncols, frontierC);
-                for (int k = 0; k < ncols; k++)
-                {
-                    printf("\nfc (%d) = (%ld, %ld)", (int)C[k],
-                V[k].parentC, V[k].rootC);
-                }
-                */
             }
             else
             {
@@ -947,11 +906,6 @@ int LAGraph_MaximumMatching(
                 GrB_DESC_S)); // update the values of vr (descriptor needed
                               // to use mask's structure and not values)
 
-            /* debug
-            GxB_Vector_fprint(vr, "vr with updated parents", GxB_COMPLETE,
-            stdout);
-            */
-
             // update mateR:  mateR<vr> = vr
             GRB_TRY(GrB_Vector_assign(mateR, vr, NULL, vr, GrB_ALL, nrows,
                                       GrB_DESC_S));
@@ -963,10 +917,6 @@ int LAGraph_MaximumMatching(
             // that will alter mates
             GRB_TRY(GrB_Vector_assign(pathCopy, pathC, NULL, mateC, GrB_ALL,
                                       ncols, GrB_DESC_RS));
-
-            /* debug
-            GxB_Vector_fprint(pathCopy, "pathCopy", GxB_COMPLETE, stdout);
-            */
 
             // update mateC
             GRB_TRY(GrB_Vector_assign(mateC, pathC, NULL, pathC, GrB_ALL, ncols,
@@ -982,19 +932,11 @@ int LAGraph_MaximumMatching(
             pathCopy = temp;
 
             GRB_TRY(GrB_Vector_nvals(&npath, pathC));
-
-            /* debug
-            GxB_Vector_fprint(mateC, "mateC", GxB_COMPLETE, stdout);
-            */
         }
 
         npath = npathCopy;
     } while (npath); // only in the first and last iteration should this
                      // condition be false
-
-    /* debug
-    GxB_Vector_fprint(mateC, "mateC", GxB_COMPLETE, stdout);
-    */
 
     if (mateC_handle != NULL)
     {
