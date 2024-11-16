@@ -132,11 +132,12 @@ int main(int argc, char **argv)
     // read in the graph
     //--------------------------------------------------------------------------
 
-    // if (argc < 2)
-    // {
-    //     printf("Invalid usage, please read comments\n");
-    //     return 0;
-    // }
+    if (argc < 2)
+    {
+        printf("Invalid usage, please read comments\n");
+        fflush(stdout);
+        return 0;
+    }
     char *matrix_name = (argc > 1) ? argv[1] : "stdin";
 
     LAGRAPH_TRY(LAGraph_Random_Init(msg));
@@ -166,6 +167,7 @@ int main(int argc, char **argv)
 #ifdef VERBOSE
     printf("nthreads_outer: %d, nthreads_inner: %d\n", nthreads_outer,
            nthreads_inner);
+    fflush(stdout);
 #endif
     nthreads_max = nthreads_outer * nthreads_inner;
     if (Nthreads[1] == 0) // THREAD_LIST == 0
@@ -189,6 +191,7 @@ int main(int argc, char **argv)
         printf(" %d", nthreads);
     }
     printf("\n");
+    fflush(stdout);
 #endif
 
     //--------------------------------------------------------------------------
@@ -203,9 +206,11 @@ int main(int argc, char **argv)
     uint64_t sprank = 0;
     GRB_TRY(GrB_Vector_nvals(&sprank, mateC));
     printf("number of matches: %ld\n", sprank);
+    fflush(stdout);
     GRB_TRY(GrB_free(&mateC));
 #ifdef VERBOSE
     printf("warmup time %g sec\n", t);
+    fflush(stdout);
 #endif
 
     //--------------------------------------------------------------------------
@@ -217,6 +222,7 @@ int main(int argc, char **argv)
     ntrials = 3; // HACK
 #ifdef VERBOSE
     printf("# of trials: %d\n", ntrials);
+    fflush(stdout);
 #endif
 
     for (int kk = 1; kk <= nt; kk++)
@@ -228,6 +234,7 @@ int main(int argc, char **argv)
 
 #ifdef VERBOSE
         printf("\n--------------------------- nthreads: %2d\n", nthreads);
+        fflush(stdout);
 #endif
 
         double total_time = 0;
@@ -241,6 +248,7 @@ int main(int argc, char **argv)
             GRB_TRY(GrB_free(&mateC));
 #ifdef VERBOSE
             printf("trial: %2d time: %10.7f sec\n", trial, t);
+            fflush(stdout);
 #endif
             total_time += t;
         }
@@ -253,6 +261,7 @@ int main(int argc, char **argv)
         printf("maximum matching: %3d: avg time: %10.7f (sec) matrix: %s\n",
                nthreads, total_time_per_trial, matrix_name);
 #endif
+        fflush(stdout);
     }
 
     //--------------------------------------------------------------------------
