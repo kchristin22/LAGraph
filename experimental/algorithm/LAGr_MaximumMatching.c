@@ -929,9 +929,8 @@ int LAGr_MaximumMatching(
             // mateC == invert (mateR) both hold).
 
             // swap path and pathCopy
-            GrB_Vector temp = pathC;
-            pathC = pathCopy;
-            pathCopy = temp;
+            GRB_TRY(GrB_Vector_assign(pathC, NULL, NULL, pathCopy, GrB_ALL,
+                                      ncols, GrB_DESC_RS));
 
             GRB_TRY(GrB_Vector_nvals(&npath, pathC));
         }
