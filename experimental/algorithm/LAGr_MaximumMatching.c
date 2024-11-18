@@ -750,8 +750,9 @@ int LAGr_MaximumMatching(
                     GRB_TRY(GrB_vxm(frontierR, NULL, NULL,
                                     MinParent_1st_Semiring, frontierC, AT,
                                     GrB_DESC_R));
-                    GRB_TRY(GrB_Vector_assign(frontierR, parentsR, NULL, frontierR,
-                                              GrB_ALL, nrows, GrB_DESC_RSC));
+                    GRB_TRY(GrB_Vector_assign(frontierR, parentsR, NULL,
+                                              frontierR, GrB_ALL, nrows,
+                                              GrB_DESC_RSC));
                 }
             }
             else
@@ -933,8 +934,9 @@ int LAGr_MaximumMatching(
             // mateC == invert (mateR) both hold).
 
             // swap path and pathCopy
-            GRB_TRY(GrB_Vector_assign(pathC, NULL, NULL, pathCopy, GrB_ALL,
-                                      ncols, GrB_DESC_RS));
+            GrB_Vector tmp = pathC;
+            pathC = pathCopy;
+            pathCopy = tmp;
 
             GRB_TRY(GrB_Vector_nvals(&npath, pathC));
         }

@@ -84,7 +84,7 @@ void test_MCM(void)
             }
 
             OK(LAGr_MaximumMatching(&mateC, NULL, A, AT, mateC_init, true,
-                                       msg));
+                                    msg));
             printf("\nmsg: %s\n", msg);
 
             GrB_Index nmatched = 0;

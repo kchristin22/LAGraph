@@ -242,7 +242,7 @@ int main(int argc, char **argv)
         {
             t = LAGraph_WallClockTime();
             LAGRAPH_TRY(LAGr_MaximumMatching(&mateC, NULL, A, AT, mateC_init,
-                                                true, msg));
+                                             true, msg));
             t = LAGraph_WallClockTime() - t;
             GRB_TRY(GrB_free(&mateC));
 #ifdef VERBOSE
