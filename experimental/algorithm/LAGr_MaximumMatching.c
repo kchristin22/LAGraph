@@ -767,7 +767,7 @@ int LAGr_MaximumMatching(
                 else
                 {
                     // Only the push method can be used if A is not given
-                    GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
+                    GRB_TRY(GrB_vxm(frontierR, NULL, NULL,
                                     MinParent_1st_Semiring, frontierC, AT,
                                     GrB_DESC_R));
                     GRB_TRY(GrB_Vector_assign(frontierR, parentsR, NULL,
