@@ -747,12 +747,9 @@ int LAGr_MaximumMatching(
                 {
                     // the frontierC vector is sparse or hypersparse
                     // push (vector's values are pushed to A)
-                    GRB_TRY(GrB_vxm(frontierR, NULL, NULL,
+                    GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
                                     MinParent_1st_Semiring, frontierC, AT,
-                                    GrB_DESC_R));
-                    GRB_TRY(GrB_Vector_assign(frontierR, parentsR, NULL,
-                                              frontierR, GrB_ALL, nrows,
-                                              GrB_DESC_RSC));
+                                    GrB_DESC_RSC));
                 }
             }
             else
@@ -769,10 +766,7 @@ int LAGr_MaximumMatching(
                     // Only the push method can be used if A is not given
                     GRB_TRY(GrB_vxm(frontierR, parentsR, NULL,
                                     MinParent_1st_Semiring, frontierC, AT,
-                                    GrB_DESC_R));
-                    GRB_TRY(GrB_Vector_assign(frontierR, parentsR, NULL,
-                                              frontierR, GrB_ALL, nrows,
-                                              GrB_DESC_RSC));
+                                    GrB_DESC_RSC));
                 }
             }
 
