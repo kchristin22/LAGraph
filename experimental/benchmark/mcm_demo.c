@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // LAGraph/experimental/benchmark/matching_demo.c: benchmarks for
-// LAGraph_MaximumMatching
+// LAGr_MaximumMatching
 //------------------------------------------------------------------------------
 
 // LAGraph, (c) 2019-2022 by The LAGraph Contributors, All Rights Reserved.
@@ -26,10 +26,76 @@ Usage:
 #include "LG_internal.h"
 #include <omp.h>
 
-#define VERBOSE
+// #define VERBOSE
 
 #define NTHREAD_LIST 1
 #define THREAD_LIST 0
+
+#define LG_FREE_ALL                                                            \
+    {                                                                          \
+        GrB_free(&A);                                                          \
+        GrB_free(&M);                                                          \
+        GrB_free(&mateC);                                                      \
+        LAGraph_Free((void *)&I, NULL);                                        \
+        LAGraph_Free((void *)&X, NULL);                                        \
+    }
+
+GrB_Info check_matching(GrB_Matrix A, GrB_Vector mateC, char *msg)
+{
+    GrB_Index nmatched = 0;
+    GrB_Vector mateR = NULL;
+    GrB_Matrix M = NULL;
+    GrB_Index *I = NULL, *X = NULL;
+
+    uint64_t ncols = 0, nrows = 0;
+    GRB_TRY(GrB_Matrix_ncols(&ncols, A));
+    GRB_TRY(GrB_Matrix_nrows(&nrows, A));
+
+    // invert to check for dups
+    GrB_Index IBytes = 0, XBytes = 0;
+    bool jumbled = 1;
+    GRB_TRY(GrB_Vector_new(&mateR, GrB_UINT64, nrows));
+    GRB_TRY(GxB_Vector_unpack_CSC(mateC, (GrB_Index **)&I, (void **)&X, &IBytes,
+                                  &XBytes, NULL, &nmatched, &jumbled, NULL));
+    GRB_TRY(GrB_Vector_build_UINT64(mateR, X, I, nmatched, GrB_FIRST_UINT64));
+    GrB_Index nmateR = 0;
+    GRB_TRY(GrB_Vector_nvals(&nmateR, mateR));
+    // if nvals of mateC and mateR don't match, then there's at least
+    // one row that is used in at least one matching
+    if (nmatched != nmateR)
+    {
+        printf("Duplicates in mateC");
+        fflush(stdout);
+        abort();
+    }
+
+    // pack matched values in a matrix
+    bool *val;
+    LAGRAPH_TRY(LAGraph_Malloc((void **)&val, nmatched, sizeof(bool), msg));
+    for (uint64_t i = 0; i < nmatched; i++)
+        val[i] = 1;
+    GRB_TRY(GrB_Matrix_new(&M, GrB_BOOL, nrows, ncols));
+    GRB_TRY(GrB_Matrix_build_BOOL(M, X, I, val, nmatched, NULL));
+    LAGRAPH_TRY(LAGraph_Free((void **)&val, msg));
+    // mask with matrix A to check if all edges are present in A
+    GRB_TRY(GrB_Matrix_assign(M, M, NULL, A, GrB_ALL, nrows, GrB_ALL, ncols,
+                              GrB_DESC_S));
+    GrB_Index nvalsM = 0;
+    GRB_TRY(GrB_Matrix_nvals(&nvalsM, M));
+    // if values have been eliminated then edges do not exist in A
+    if (nvalsM != nmatched)
+    {
+        printf("mateC invalid!\n");
+        fflush(stdout);
+        abort();
+    }
+
+    GRB_TRY(GxB_Vector_pack_CSC(mateC, (GrB_Index **)&I, (void **)&X, IBytes,
+                                XBytes, NULL, nmatched, jumbled, NULL));
+
+    GrB_Vector_free(&mateR);
+    GrB_Matrix_free(&M);
+}
 
 #undef LG_FREE_ALL
 #define LG_FREE_ALL                                                            \
@@ -66,11 +132,12 @@ int main(int argc, char **argv)
     // read in the graph
     //--------------------------------------------------------------------------
 
-    // if (argc < 2)
-    // {
-    //     printf("Invalid usage, please read comments\n");
-    //     return 0;
-    // }
+    if (argc < 2)
+    {
+        printf("Invalid usage, please read comments\n");
+        fflush(stdout);
+        return 0;
+    }
     char *matrix_name = (argc > 1) ? argv[1] : "stdin";
 
     LAGRAPH_TRY(LAGraph_Random_Init(msg));
@@ -100,6 +167,7 @@ int main(int argc, char **argv)
 #ifdef VERBOSE
     printf("nthreads_outer: %d, nthreads_inner: %d\n", nthreads_outer,
            nthreads_inner);
+    fflush(stdout);
 #endif
     nthreads_max = nthreads_outer * nthreads_inner;
     if (Nthreads[1] == 0) // THREAD_LIST == 0
@@ -123,6 +191,7 @@ int main(int argc, char **argv)
         printf(" %d", nthreads);
     }
     printf("\n");
+    fflush(stdout);
 #endif
 
     //--------------------------------------------------------------------------
@@ -130,14 +199,18 @@ int main(int argc, char **argv)
     //--------------------------------------------------------------------------
 
     double t = LAGraph_WallClockTime();
-    LAGRAPH_TRY(LAGraph_MaximumMatching(&mateC, A, AT, mateC_init, msg));
+    LAGRAPH_TRY(
+        LAGr_MaximumMatching(&mateC, NULL, A, AT, mateC_init, true, msg));
     t = LAGraph_WallClockTime() - t;
+    LAGRAPH_TRY(check_matching(A, mateC, msg));
     uint64_t sprank = 0;
     GRB_TRY(GrB_Vector_nvals(&sprank, mateC));
     printf("number of matches: %ld\n", sprank);
+    fflush(stdout);
     GRB_TRY(GrB_free(&mateC));
 #ifdef VERBOSE
     printf("warmup time %g sec\n", t);
+    fflush(stdout);
 #endif
 
     //--------------------------------------------------------------------------
@@ -146,9 +219,9 @@ int main(int argc, char **argv)
 
     // the GAP benchmark requires 16 trials
     int ntrials = 16;
-    ntrials = 1; // HACK to run just one trial
 #ifdef VERBOSE
     printf("# of trials: %d\n", ntrials);
+    fflush(stdout);
 #endif
 
     for (int kk = 1; kk <= nt; kk++)
@@ -160,6 +233,7 @@ int main(int argc, char **argv)
 
 #ifdef VERBOSE
         printf("\n--------------------------- nthreads: %2d\n", nthreads);
+        fflush(stdout);
 #endif
 
         double total_time = 0;
@@ -167,12 +241,13 @@ int main(int argc, char **argv)
         for (int trial = 0; trial < ntrials; trial++)
         {
             t = LAGraph_WallClockTime();
-            LAGRAPH_TRY(
-                LAGraph_MaximumMatching(&mateC, A, AT, mateC_init, msg));
+            LAGRAPH_TRY(LAGr_MaximumMatching(&mateC, NULL, A, AT, mateC_init,
+                                             true, msg));
             t = LAGraph_WallClockTime() - t;
             GRB_TRY(GrB_free(&mateC));
 #ifdef VERBOSE
             printf("trial: %2d time: %10.7f sec\n", trial, t);
+            fflush(stdout);
 #endif
             total_time += t;
         }
@@ -185,6 +260,7 @@ int main(int argc, char **argv)
         printf("maximum matching: %3d: avg time: %10.7f (sec) matrix: %s\n",
                nthreads, total_time_per_trial, matrix_name);
 #endif
+        fflush(stdout);
     }
 
     //--------------------------------------------------------------------------

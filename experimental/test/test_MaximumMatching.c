@@ -83,7 +83,8 @@ void test_MCM(void)
                 OK(GrB_transpose(AT, NULL, NULL, A, NULL));
             }
 
-            OK(LAGraph_MaximumMatching(&mateC, A, AT, mateC_init, msg));
+            OK(LAGr_MaximumMatching(&mateC, NULL, A, AT, mateC_init, true,
+                                    msg));
             printf("\nmsg: %s\n", msg);
 
             GrB_Index nmatched = 0;
@@ -114,6 +115,8 @@ void test_MCM(void)
             OK(GrB_Matrix_new(&M, GrB_BOOL, nrows, ncols));
             OK(GrB_Matrix_build_BOOL(M, X, J, val, nmatched, NULL));
             OK(LAGraph_Free((void **)&val, msg));
+            OK(LAGraph_Free((void **)&J, msg));
+            OK(LAGraph_Free((void **)&X, msg));
             // mask with matrix A to check if all edges are present in A
             OK(GrB_Matrix_assign(M, M, NULL, A, GrB_ALL, nrows, GrB_ALL, ncols,
                                  GrB_DESC_S));
